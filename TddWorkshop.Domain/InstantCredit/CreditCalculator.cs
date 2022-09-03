@@ -2,6 +2,13 @@ namespace TddWorkshop.Domain.InstantCredit;
 
 internal class CreditCalculator
 {
+    private readonly ICriminalRecordChecker _criminalRecordChecker;
+
+    public CreditCalculator(ICriminalRecordChecker criminalRecordChecker)
+    {
+        _criminalRecordChecker = criminalRecordChecker;
+    }
+
     private static int GetAgePoints(int age, CreditInfo creditInfo)
     {
         if (age.Between(21, 28))
@@ -57,14 +64,26 @@ internal class CreditCalculator
         return 0;
     }
 
-    protected Task<bool> HasCriminalRecordAsync()
+    protected async Task<bool> HasCriminalRecordAsync(PersonalInfo personalInfo, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await _criminalRecordChecker.HasCriminalRecord(personalInfo, cancellationToken);
     }
+   
     
-    public Task<CalculateCreditResponse> CalculateAsync(CalculateCreditRequest request)
+    public async Task<CalculateCreditResponse> CalculateAsync(CalculateCreditRequest request, bool hasCriminalRecord,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var points = 0;
+        points += GetAgePoints(request.PersonalInfo.Age, request.CreditInfo);
+        points += GetEmploymentPoints(request.CreditInfo.Employment, request.PersonalInfo.Age);
+        points += GetCreditGoalPoints(request.CreditInfo.Goal);
+        points += GetDepositPoints(request.CreditInfo.Deposit);
+        points+= GetOtherCreditPoints(request.CreditInfo.HasOtherCredits, request.CreditInfo.Goal);
+        points += GetSumPoints(request.CreditInfo.Sum);
+
+        points += GetCriminalRecordPoints(hasCriminalRecord);
+
+        return new CalculateCreditResponse(points);
     }
 
     private static int GetSumPoints(decimal sum) => sum switch

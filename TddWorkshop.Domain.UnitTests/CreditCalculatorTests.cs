@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using AutoFixture.Xunit2;
 using Bogus;
 using FsCheck.Xunit;
@@ -15,11 +17,22 @@ namespace TddWorkshop.Domain.Tests;
 
 public class CreditCalculatorTests
 {
-    [Fact(Skip = "Implement on Step 1")]
-    public void Calculate_IsApproved_PointsCalculatedCorrectly()
-    //CalculateCreditRequest request, bool hasCriminalRecord, int points)
+    [Theory, ClassData(typeof(CreditCalculatorTestData))]
+    public async Task Calculate_IsApproved_PointsCalculatedCorrectly(
+    CalculateCreditRequest request, bool hasCriminalRecord, int points)
     {
-        throw new NotImplementedException();
+        var creditCalculator = new CreditCalculator(new CriminalRecordCheckerMock(hasCriminalRecord));
+        var result = await creditCalculator.CalculateAsync(request, hasCriminalRecord);
+
+        Assert.Equal(points, result.Points);
+    }
+    
+    [Theory, AutoData]
+    public async Task Calculate_AutoData_NoException(
+        CalculateCreditRequest request, bool hasCriminalRecord)
+    {
+        var creditCalculator = new CreditCalculator(new CriminalRecordCheckerMock(hasCriminalRecord));
+        var result = await creditCalculator.CalculateAsync(request, hasCriminalRecord);
     }
 }
 
